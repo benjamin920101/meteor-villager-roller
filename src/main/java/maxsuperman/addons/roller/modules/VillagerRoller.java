@@ -2,6 +2,7 @@ package maxsuperman.addons.roller.modules;
 
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.KeybindSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -49,6 +50,15 @@ public class VillagerRoller extends Module {
         .description("Keybind to toggle in-game enable")
         .defaultValue(Keybind.none())
         .visible(enableKeybind::get)
+        .build()
+    );
+
+    private final Setting<Integer> totemThreshold = sgGeneral.add(new IntSetting.Builder()
+        .name("totem-threshold")
+        .description("Trigger notification when totem count reaches this number or below")
+        .defaultValue(1)
+        .min(1)
+        .sliderMax(10)
         .build()
     );
 
@@ -103,10 +113,11 @@ public class VillagerRoller extends Module {
         if (!inGameEnabled.get()) return;
 
         int currentTotemCount = countTotemsInInventory(player.getInventory());
+        int threshold = totemThreshold.get();
         boolean shouldNotify = false;
-        if (currentTotemCount == 1) {
+        if (currentTotemCount <= threshold) {
             if (notifyOnDropOnly.get()) {
-                shouldNotify = lastTotemCount > 1;
+                shouldNotify = lastTotemCount > threshold;
             } else {
                 shouldNotify = true;
             }
@@ -114,7 +125,10 @@ public class VillagerRoller extends Module {
 
         if (shouldNotify) {
             if (chatNotify.get()) {
-                player.sendMessage(Text.literal("[Auto Totem] Warning: Only one totem left."), true);
+                String message = threshold == 1
+                    ? "[Auto Totem] Warning: Only one totem left."
+                    : String.format("[Auto Totem] Warning: Only %d totems left.", currentTotemCount);
+                player.sendMessage(Text.literal(message), true);
             }
             String url = webhookUrl.get().trim();
             if (!url.isEmpty()) {
