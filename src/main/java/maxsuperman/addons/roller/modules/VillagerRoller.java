@@ -130,9 +130,12 @@ public class VillagerRoller extends Module {
                     : String.format("[Auto Totem] Warning: Only %d totems left.", currentTotemCount);
                 player.sendMessage(Text.literal(message), true);
             }
-            String url = webhookUrl.get().trim();
-            if (!url.isEmpty()) {
-                sendWebhookNotification(url);
+            // Only send webhook once when count drops below threshold
+            if (lastTotemCount > threshold) {
+                String url = webhookUrl.get().trim();
+                if (!url.isEmpty()) {
+                    sendWebhookNotification(url);
+                }
             }
         }
 
